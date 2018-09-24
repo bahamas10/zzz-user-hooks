@@ -10,9 +10,9 @@ install:
 
 .PHONY: uninstall
 uninstall:
-	rm -f /etc/zzz.d/user-script
 	rm -f /etc/zzz.d/resume/99-user-script
 	rm -f /etc/zzz.d/suspend/99-user-script
+	rm -f /etc/zzz.d/user-script
 
 .PHONY: check
 check:

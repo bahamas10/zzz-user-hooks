@@ -96,14 +96,14 @@ esac
 
 # run the script
 if [[ $display == *"wayland"* ]]; then
-	env="WAYLAND_DISPLAY=$display XDG_RUNTIME_DIR=$xrd"
+	env+=("WAYLAND_DISPLAY=$display" "XDG_RUNTIME_DIR=$xrd")
 else
 
 	[[ -e $home/.Xauthority ]] || \
 		fatal "failed to find Xauthority file for user $user"
-	env="DISPLAY=:$display"
+	env+=("DISPLAY=:$display")
 fi
 
-msg "running $script for user $user ($env)"
-sudo -Hu "$user" $env timeout "$timeout" "$script"
+msg "running $script for user $user with ${env[*]}"
+sudo -Hu "$user" "${env[@]}" timeout "$timeout" "$script"
 msg "ran $script for user $user, exited $?"

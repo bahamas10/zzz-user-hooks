@@ -56,7 +56,7 @@ for xrd in /run/user/*; do
 	done
 	if [[ $display == *"wayland"* ]]; then
 		found=true
-	break
+		break
 	fi
 done
 # search for X session

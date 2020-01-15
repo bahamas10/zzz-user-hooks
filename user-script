@@ -60,7 +60,7 @@ for xrd in /run/user/*; do
 	fi
 done
 # search for X session
-if [ "$found" = false ] ; then
+if ! "$found"; then
 	for sock in /tmp/.X11-unix/X*; do
 		# socket group is the user that owns the session
 		user=$(stat --printf '%G' "$sock")

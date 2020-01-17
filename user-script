@@ -1,10 +1,11 @@
 #!/usr/bin/env bash
 #
 # Calls scripts in a users home directory that currently has an active X
-# session.  Intended to be called by `zzz`.
+# or Wayland session. Intended to be called by `zzz`.
 #
 # Author: Dave Eddy <dave@daveeddy.com>
-# Date: September 07, 2018
+# Contributor: Javier Caballero Lloris <jacallo@protonmail.com>
+# Date: January 14, 2020
 # License: MIT
 
 # Must be set by the caller, should be 'suspend' or 'resume'.
@@ -31,7 +32,7 @@ fatal() {
 msg "called $(date)"
 
 # Get the username, home directory, and DISPLAY number of the currently logged
-# in user with an X session.
+# in user with a Wayland or X session.
 #
 # This logic is fairly dumb: it will stop at the first display found, and give
 # up easily if anything is awry.
@@ -39,31 +40,50 @@ msg "called $(date)"
 # This should probably be extended to support multiply displays and multiple
 # users... but for now this gets the job done for a single user workstation.
 found=false
-for sock in /tmp/.X11-unix/X*; do
-	# socket group is the user that owns the session
-	user=$(stat --printf '%G' "$sock")
-	[[ -n $user ]] || fatal "failed to find owner (group) of $sock"
-
-	# get the users home directory
-	home=$(getent passwd "$user" | cut -d: -f6)
-	[[ -n $home && -d $home ]] || \
-	    fatal "failed to find users $user home directory"
-
-	[[ -e $home/.Xauthority ]] || \
-	    fatal "failed to find Xauthority file for user $user"
-
-	# extract the display number
-	display=${sock##*/}
-	display=${display#X}
-	[[ $display =~ $num_re ]] || \
-	    fatal "invalid display number found: '$display'"
-
-	found=true
-	break
+# search for wayland session
+for xrd in /run/user/*; do
+	userid=${xrd##*/}
+	user=$(getent passwd "$userid" | cut -f 1 -d ":")
+	[[ -n $user ]] || fatal "failed to find owner of $xrd"
+	for f in "$xrd"/*; do
+		if [[ $f == *"wayland"* ]]; then
+			# extract the display number
+			display=${f##*/}
+			[[ ${display#"wayland-"} =~ $num_re ]] || \
+				continue
+			break
+		fi
+	done
+	if [[ $display == *"wayland"* ]]; then
+		found=true
+		break
+	fi
 done
+# search for X session
+if ! "$found"; then
+	for sock in /tmp/.X11-unix/X*; do
+		# socket group is the user that owns the session
+		user=$(stat --printf '%G' "$sock")
+		[[ -n $user ]] || fatal "failed to find owner (group) of $sock"
+
+		# extract the display number
+		display=${sock##*/}
+		display=${display#X}
+		[[ $display =~ $num_re ]] || \
+			fatal "invalid display number found: '$display'"
+
+		found=true
+		break
+	done
+fi
 
 # ensure we have something
-$found || fatal 'failed to find an active X session'
+$found || fatal 'failed to find an active session'
+
+# get the user home directory
+home=$(getent passwd "$user" | cut -d: -f6)
+[[ -n $home && -d $home ]] || \
+	fatal "failed to find user $user home directory"
 
 # figure out what script to run
 case "$mode" in
@@ -72,9 +92,18 @@ case "$mode" in
 	'') fatal 'mode must be specified as the first argument';;
 	*) fatal "invalid mode specified: '$mode'";;
 esac
-[[ -x $script ]] || fatal "script $script not found or executable"
+[[ -x $script ]] || fatal "script $script not found or not executable"
 
 # run the script
-msg "running $script for user $user (DISPLAY=:$display)"
-sudo -Hu "$user" "DISPLAY=:$display" timeout "$timeout" "$script"
+if [[ $display == *"wayland"* ]]; then
+	env+=("WAYLAND_DISPLAY=$display" "XDG_RUNTIME_DIR=$xrd")
+else
+
+	[[ -e $home/.Xauthority ]] || \
+		fatal "failed to find Xauthority file for user $user"
+	env+=("DISPLAY=:$display")
+fi
+
+msg "running $script for user $user with ${env[*]}"
+sudo -Hu "$user" "${env[@]}" timeout "$timeout" "$script"
 msg "ran $script for user $user, exited $?"

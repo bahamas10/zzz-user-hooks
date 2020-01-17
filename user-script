@@ -98,10 +98,9 @@ esac
 if [[ $display == *"wayland"* ]]; then
 	env+=("WAYLAND_DISPLAY=$display" "XDG_RUNTIME_DIR=$xrd")
 else
-
 	[[ -e $home/.Xauthority ]] || \
 		fatal "failed to find Xauthority file for user $user"
-	env+=("DISPLAY=:$display")
+	env+=("DISPLAY=:$display" "XAUTHORITY=$home/.Xauthority")
 fi
 
 msg "running $script for user $user with ${env[*]}"

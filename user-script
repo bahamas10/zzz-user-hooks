@@ -40,6 +40,9 @@ msg "called $(date)"
 # This should probably be extended to support multiply displays and multiple
 # users... but for now this gets the job done for a single user workstation.
 found=false
+
+shopt -s nullglob
+
 # search for wayland session
 for xrd in /run/user/*; do
 	userid=${xrd##*/}
@@ -59,8 +62,9 @@ for xrd in /run/user/*; do
 		break
 	fi
 done
-# search for X session
-if ! "$found"; then
+
+# search for X session if a session is not found above
+if ! $found; then
 	for sock in /tmp/.X11-unix/X*; do
 		# socket group is the user that owns the session
 		user=$(stat --printf '%G' "$sock")

@@ -98,7 +98,7 @@ case "$mode" in
 esac
 [[ -x $script ]] || fatal "script $script not found or not executable"
 
-# run the script
+# create the environment
 env=(
 	"HOME=$home"
 	"USER=$user"
@@ -111,6 +111,10 @@ else
 	env+=("DISPLAY=:$display" "XAUTHORITY=$home/.Xauthority")
 fi
 
-msg "running $script for user $user with ${env[*]}"
+# go to the home directory
+cd "$home" || fatal "failed to cd into home directory: $home"
+
+# run the script
+msg "running $script for user $user in $home with ${env[*]}"
 chpst -u "$user" env "${env[@]}" timeout "$timeout" "$script"
 msg "ran $script for user $user, exited $?"

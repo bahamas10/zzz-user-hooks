@@ -46,7 +46,7 @@ shopt -s nullglob
 # search for wayland session
 for xrd in /run/user/*; do
 	userid=${xrd##*/}
-	user=$(getent passwd "$userid" | cut -f 1 -d ":")
+	user=$(id -un "$userid")
 	[[ -n $user ]] || fatal "failed to find owner of $xrd"
 	for f in "$xrd"/*; do
 		if [[ $f == *"wayland"* ]]; then

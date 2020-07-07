@@ -99,6 +99,10 @@ esac
 [[ -x $script ]] || fatal "script $script not found or not executable"
 
 # run the script
+env=(
+	"HOME=$home"
+	"USER=$user"
+)
 if [[ $display == *"wayland"* ]]; then
 	env+=("WAYLAND_DISPLAY=$display" "XDG_RUNTIME_DIR=$xrd")
 else
@@ -108,5 +112,5 @@ else
 fi
 
 msg "running $script for user $user with ${env[*]}"
-sudo -Hu "$user" "${env[@]}" timeout "$timeout" "$script"
+chpst -u "$user" env "${env[@]}" timeout "$timeout" "$script"
 msg "ran $script for user $user, exited $?"

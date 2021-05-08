@@ -90,9 +90,11 @@ home=$(getent passwd "$user" | cut -d: -f6)
 	fatal "failed to find user $user home directory"
 
 # figure out what script to run
+SUSPEND="$(su - "$user" -c "echo ${ZZZ_SUSPEND:-$home/.onsuspend}")"
+RESUME="$(su - "$user" -c "echo ${ZZZ_RESUME:-$home/.onsuspend}")"
 case "$mode" in
-	suspend) script=$home/.onsuspend;;
-	resume) script=$home/.onresume;;
+	suspend) script=$SUSPEND;;
+	resume) script=$RESUME;;
 	'') fatal 'mode must be specified as the first argument';;
 	*) fatal "invalid mode specified: '$mode'";;
 esac
@@ -106,9 +108,10 @@ env=(
 if [[ $display == *"wayland"* ]]; then
 	env+=("WAYLAND_DISPLAY=$display" "XDG_RUNTIME_DIR=$xrd")
 else
-	[[ -e $home/.Xauthority ]] || \
+	xauthority="$(su - "$user" -c "echo ${XAUTHORITY:-$HOME/.Xauthority}")"
+	[[ -e $xauthority ]] || \
 		fatal "failed to find Xauthority file for user $user"
-	env+=("DISPLAY=:$display" "XAUTHORITY=$home/.Xauthority")
+	env+=("DISPLAY=:$display" "XAUTHORITY=$xauthority")
 fi
 
 # go to the home directory

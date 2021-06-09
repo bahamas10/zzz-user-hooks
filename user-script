@@ -52,7 +52,7 @@ for xrd in /run/user/*; do
 		if [[ $f == *"wayland"* ]]; then
 			# extract the display number
 			display=${f##*/}
-			[[ ${display#"wayland-"} =~ $num_re ]] || \
+			[[ ${display#"wayland-"} =~ $num_re ]] ||
 				continue
 			break
 		fi
@@ -73,7 +73,7 @@ if ! $found; then
 		# extract the display number
 		display=${sock##*/}
 		display=${display#X}
-		[[ $display =~ $num_re ]] || \
+		[[ $display =~ $num_re ]] ||
 			fatal "invalid display number found: '$display'"
 
 		found=true
@@ -86,17 +86,17 @@ $found || fatal 'failed to find an active session'
 
 # get the user home directory
 home=$(getent passwd "$user" | cut -d: -f6)
-[[ -n $home && -d $home ]] || \
+[[ -n $home && -d $home ]] ||
 	fatal "failed to find user $user home directory"
 
 # figure out what script to run
-SUSPEND="$(su - "$user" -c "echo ${ZZZ_SUSPEND:-$home/.onsuspend}")"
-RESUME="$(su - "$user" -c "echo ${ZZZ_RESUME:-$home/.onsuspend}")"
+SUSPEND="${XDG_CONFIG_HOME:-$HOME/.config}/zzz/onsuspend}"
+RESUME="${XDG_CONFIG_HOME:-$HOME/.config}/zzz/onresume"
 case "$mode" in
-	suspend) script=$SUSPEND;;
-	resume) script=$RESUME;;
-	'') fatal 'mode must be specified as the first argument';;
-	*) fatal "invalid mode specified: '$mode'";;
+suspend) script=$SUSPEND ;;
+resume) script=$RESUME ;;
+'') fatal 'mode must be specified as the first argument' ;;
+*) fatal "invalid mode specified: '$mode'" ;;
 esac
 [[ -x $script ]] || fatal "script $script not found or not executable"
 
@@ -108,8 +108,8 @@ env=(
 if [[ $display == *"wayland"* ]]; then
 	env+=("WAYLAND_DISPLAY=$display" "XDG_RUNTIME_DIR=$xrd")
 else
-	xauthority="$(su - "$user" -c "echo ${XAUTHORITY:-$HOME/.Xauthority}")"
-	[[ -e $xauthority ]] || \
+	xauthority="${XDG_CONFIG_HOME:-$HOME/.config}/Xauthority"
+	[[ -e $xauthority ]] ||
 		fatal "failed to find Xauthority file for user $user"
 	env+=("DISPLAY=:$display" "XAUTHORITY=$xauthority")
 fi
